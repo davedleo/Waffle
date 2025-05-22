@@ -7,9 +7,13 @@ Install the required Python packages using: pip install -r requirements.txt
 ## Data preparation 
 Before running the experiments, download the dataset using torchvision.datasets and save the images in the following structure:
 ./data/dataset_name/
+
     ├── train/
+    
     │   └── x{i}_y{label}.png
+    
     └── test/
+    
         └── x{i}_y{label}.png
 
 •	dataset_name can be, for example, cifar10 or fashion_mnist
