@@ -124,52 +124,42 @@ class Server(BaseServer):
     def _hessian_estimation(
             self
     ) -> Tensor:
-        # Setup
         if len(self.ddW) < self.N:
             return None
         
-        # Vector v = w_t - w_{t-1}, shape: (1, p)
-        v = self.dW[-1].view(1, -1)  # shape: (1, p)
+        v = self.dW[-1].view(1, -1)
 
-        # Stack the N most recent differences
-        dW = stack(self.dW, dim = 1)  # shape: (p, N)
-        dG = stack(self.ddW, dim = 1)  # shape: (p, N)
+        dW = stack(self.dW, dim = 1) 
+        dG = stack(self.ddW, dim = 1)  
 
-        # Compute required matrices
-        dWdW = dW.T @ dW            # shape: (N, N)
-        dWdG = dW.T @ dG            # shape: (N, N)
-        D = diag(diag(dWdG))    # D: diagonal of dWdG
-        L = tril(dWdG, diagonal=-1) # L: strictly lower triangular of dWdG
+        dWdW = dW.T @ dW           
+        dWdG = dW.T @ dG           
+        D = diag(diag(dWdG))    
+        L = tril(dWdG, diagonal=-1) 
 
-        # Compute scalar sigma
-        s_last = self.dW[-1].view(-1)  # shape: (p,)
-        y_last = self.ddW[-1].view(-1) # shape: (p,)
+        s_last = self.dW[-1].view(-1)  
+        y_last = self.ddW[-1].view(-1)
         sigma = (y_last @ s_last) / (s_last @ s_last + 1e-12)
 
-        # Compute J using Cholesky
-        A = sigma * dWdW + L @ D @ L.T  # shape: (N, N)
-        J = cholesky(A + 1e-8 * eye(A.size(0), device=A.device))  # for numerical stability
+        A = sigma * dWdW + L @ D @ L.T
+        J = cholesky(A + 1e-8 * eye(A.size(0), device=A.device)) 
 
-        # Construct RHS vector
         rhs = cat([
-            dG.T @ v.T,                    # shape: (N, 1)
-            sigma * (dW.T @ v.T)          # shape: (N, 1)
-        ], dim=0)                         # shape: (2N, 1)
+            dG.T @ v.T,                   
+            sigma * (dW.T @ v.T)          
+        ], dim=0)                      
 
-        # Construct inverse transformation matrices
-        upper = cat([-(D + 1e-8).sqrt(), (D + 1e-8).rsqrt() @ L.T], dim=1)  # (N, 2N)
-        lower = cat([zeros_like(J), J.T], dim=1)    # (N, 2N)
-        Q1 = cat([upper, lower], dim=0)                   # (2N, 2N)
+        upper = cat([-(D + 1e-8).sqrt(), (D + 1e-8).rsqrt() @ L.T], dim=1)
+        lower = cat([zeros_like(J), J.T], dim=1)  
+        Q1 = cat([upper, lower], dim=0)           
 
         lower = cat([(D + 1e-8).sqrt(), zeros_like(J)], dim=1)
         upper = cat([(D + 1e-8).rsqrt() @ L.T, J], dim=1)
         Q2 = cat([lower, upper], dim=0)
 
-        # Solve the system
         q = solve(Q1, rhs)
-        q = solve(Q2, q)  # final q
+        q = solve(Q2, q)  
 
-        # Final Hessian-vector product
         Hv = sigma * v - (dG @ q[:self.N] + sigma * dW @ q[self.N:]).T.view(1, -1)
         return Hv.view(-1)
     
@@ -181,16 +171,14 @@ class Server(BaseServer):
     ) -> list[Tensor]:
         distances = [(g_hat - g).norm() for g_hat, g in zip(predicted, received)]
         d_t = stack(distances)
-        d_t_norm = d_t / d_t.sum()  # normalize over all clients
+        d_t_norm = d_t / d_t.sum() 
 
-        # Append and maintain window
         self.past_scores.append(d_t_norm)
         if len(self.past_scores) > self.N:
             self.past_scores.pop(0)
 
-        # Compute final suspicious score for each client
         s = stack(self.past_scores).mean(dim=0)
-        return s.tolist()  # suspicious score per client
+        return s.tolist()  
     
 
     def _gap_statistic(
