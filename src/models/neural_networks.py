@@ -1,4 +1,4 @@
-from torch import Tensor
+from torch import Tensor, exp, randn_like
 import torch.nn.functional as F
 from torch.nn import Module, Sequential, Linear, ReLU, Conv1d, AdaptiveMaxPool1d, Dropout, Conv2d, MaxPool2d, Flatten
 
@@ -39,7 +39,7 @@ class LeNet5(Module):
 
 
 
-class NewsCNNClassifier(nn.Module):
+class NewsCNNClassifier(Module):
     def __init__(self, num_classes=20):
         super().__init__()
         self.conv1 = Conv1d(in_channels=50, out_channels=128, kernel_size=5, padding=2)
@@ -60,25 +60,31 @@ class NewsCNNClassifier(nn.Module):
 
 
 class VAE(Module): 
-
-
-    def __init__(
-            self, 
-            num_features: int
-    ): 
+    def __init__(self, num_features: int, latent_dim: int = 100): 
+        super().__init__()
+        
+        # Encoder maps input -> hidden -> latent mean & logvar
         self.encoder = Sequential(
-            Linear(num_features, 500), ReLU(),
-            Linear(500, 100)
+            Linear(num_features, 500), ReLU()
         )
+        self.fc_mu = Linear(500, latent_dim)
+        self.fc_logvar = Linear(500, latent_dim)
+
+        # Decoder maps latent -> hidden -> output
         self.decoder = Sequential(
-            Linear(100, 500), ReLU(),
+            Linear(latent_dim, 500), ReLU(),
             Linear(500, num_features)
         )
-        return
-    
 
-    def forward(
-            self, 
-            X: Tensor
-    ) -> Tensor: 
-        return self.decoder(self.encoder(X))
+    def reparameterize(self, mu: Tensor, logvar: Tensor) -> Tensor:
+        std = exp(0.5 * logvar)
+        eps = randn_like(std)
+        return mu + eps * std  # z ~ N(mu, sigma^2)
+
+    def forward(self, X: Tensor) -> tuple[Tensor, Tensor, Tensor]:
+        hidden = self.encoder(X)
+        mu = self.fc_mu(hidden)
+        logvar = self.fc_logvar(hidden)
+        z = self.reparameterize(mu, logvar)
+        recon = self.decoder(z)
+        return recon, mu, logvar
