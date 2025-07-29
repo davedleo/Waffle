@@ -62,15 +62,11 @@ class NewsCNNClassifier(Module):
 class VAE(Module): 
     def __init__(self, num_features: int, latent_dim: int = 100): 
         super().__init__()
-        
-        # Encoder maps input -> hidden -> latent mean & logvar
         self.encoder = Sequential(
             Linear(num_features, 500), ReLU()
         )
         self.fc_mu = Linear(500, latent_dim)
         self.fc_logvar = Linear(500, latent_dim)
-
-        # Decoder maps latent -> hidden -> output
         self.decoder = Sequential(
             Linear(latent_dim, 500), ReLU(),
             Linear(500, num_features)
@@ -79,7 +75,7 @@ class VAE(Module):
     def reparameterize(self, mu: Tensor, logvar: Tensor) -> Tensor:
         std = exp(0.5 * logvar)
         eps = randn_like(std)
-        return mu + eps * std  # z ~ N(mu, sigma^2)
+        return mu + eps * std 
 
     def forward(self, X: Tensor) -> tuple[Tensor, Tensor, Tensor]:
         hidden = self.encoder(X)
