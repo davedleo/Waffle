@@ -1,5 +1,6 @@
-from torch import Tensor, no_grad
-from torch.nn import Module, Sequential, Linear, ReLU, Conv2d, MaxPool2d, Flatten
+from torch import Tensor
+import torch.nn.functional as F
+from torch.nn import Module, Sequential, Linear, ReLU, Conv1d, AdaptiveMaxPool1d, Dropout, Conv2d, MaxPool2d, Flatten
 
 
 
@@ -33,6 +34,26 @@ class LeNet5(Module):
         X = self._fmap(X)
         y = self._mlp(X)
         return y
+    
+
+
+
+
+class NewsCNNClassifier(nn.Module):
+    def __init__(self, num_classes=20):
+        super().__init__()
+        self.conv1 = Conv1d(in_channels=50, out_channels=128, kernel_size=5, padding=2)
+        self.conv2 = Conv1d(128, 128, kernel_size=5, padding=2)
+        self.dropout = Dropout(0.3)
+        self.pool = AdaptiveMaxPool1d(1)
+        self.fc = Linear(128, num_classes)
+
+    def forward(self, x):
+        x = F.relu(self.conv1(x))     
+        x = F.relu(self.conv2(x))     
+        x = self.pool(x).squeeze(-1)   
+        x = self.dropout(x)
+        return self.fc(x)
 
 
 
