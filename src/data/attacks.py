@@ -1,4 +1,4 @@
-from torch import Tensor, zeros_like, normal
+from torch import Tensor, rand, rand_like, zeros_like, normal
 from torchvision.transforms.functional import gaussian_blur
 
 
@@ -122,6 +122,59 @@ class Black(Attack):
             X: Tensor
     ) -> Tensor: 
         return zeros_like(X, requires_grad = False)
+    
+
+
+
+
+class RandomCancellation(Attack): 
+    
+    
+    def __init__(
+            self,
+            proba: float = 0.5
+    ): 
+        super(RandomCancellation, self).__init__()
+        self.p = proba
+        return 
+    
+
+    def forward(
+            self, 
+            X: Tensor
+    ) -> Tensor: 
+        rand_mask = rand_like(X) > self.p 
+        X_new = X.clone()
+        X_new[rand_mask] = 0.
+        return X_new
+
+
+
+
+
+class ShiftEmbedding(Attack): 
+    
+    
+    def __init__(
+            self,
+            proba: float = 0.5
+    ): 
+        super(ShiftEmbedding, self).__init__()
+        self.p = proba
+        return 
+    
+
+    def forward(
+            self, 
+            X: Tensor
+    ) -> Tensor: 
+        shift = rand_like(X) 
+        shift = shift / shift.norm(dim = -1, keepdim = True)
+        mask = rand(X.size(1), device = X.device).type(X.dtype) <= self.p 
+        shift[:, mask] = 0.
+        return X + shift
+
+
 
 
 
