@@ -72,10 +72,14 @@ class VAE(Module):
             Linear(500, num_features)
         )
 
+
+
     def reparameterize(self, mu: Tensor, logvar: Tensor) -> Tensor:
         std = exp(0.5 * logvar)
         eps = randn_like(std)
         return mu + eps * std 
+
+
 
     def forward(self, X: Tensor) -> tuple[Tensor, Tensor, Tensor]:
         hidden = self.encoder(X)
