@@ -26,7 +26,7 @@ class Dataset(BaseDataset):
             self, 
             data: Dict[str, List[Any]],
             train: bool,
-            attack: Optional[Attack] = None # it is
+            attack: Optional[Attack] = None 
     ): 
         super(Dataset, self).__init__(data)
         self.loading_transforms = attack
@@ -42,7 +42,8 @@ class Dataset(BaseDataset):
         for txt_path, y in zip(self.X, self.y):
             x_np = loadtxt(txt_path, dtype=float32)
             x = from_numpy(x_np)
-            x = self.loading_transforms(x)
+            if self.loading_transforms is not None: 
+                x = self.loading_transforms(x)
             self.cache.append((x, y))
         return
     
