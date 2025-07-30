@@ -70,7 +70,7 @@ class DetectionDataset(Dataset):
         shuffle(indexes)
 
         # Create imgs
-        imgs0, imgs1, imgs2 = [], [], []
+        imgs0, imgs1, imgs2, imgs3 = [], [], [], []
         for i in indexes: 
             x, _ = self.dataset[i]
             if x.size(0) == 3:
@@ -87,17 +87,22 @@ class DetectionDataset(Dataset):
                     attack = ShiftEmbedding(uniform(.4, .8))
                     imgs1.append(attack(x[None, :, :]).numpy())
                 
-                elif randint(0, 1): 
-                    attack = GaussianNoise(uniform(.5, 2.)) 
-                    imgs1.append(attack(x[None, :, :])[0].numpy())
-                else:
-                    attack = GaussianBlur(2 * randint(1, 9) + 1)
-                    imgs2.append(attack(x[None, :, :])[0].numpy())
+                else: 
+                    atk = randint(0, 2)
+                    if atk == 0: 
+                        attack = GaussianNoise(uniform(.5, 2.)) 
+                        imgs1.append(attack(x[None, :, :])[0].numpy())
+                    elif atk == 1:
+                        attack = GaussianBlur(2 * randint(1, 9) + 1)
+                        imgs2.append(attack(x[None, :, :])[0].numpy())
+                    else: 
+                        attack = RandomCancellation(uniform(.25, .75))
+                        imgs3.append(attack(x[None, :, :][0].numpy()))
 
         cache_tmp = []
         labels_tmp = []
 
-        for (imgs, label) in zip([imgs0, imgs1, imgs2], [0, 1, 1]): 
+        for (imgs, label) in zip([imgs0, imgs1, imgs2, imgs3], [0, 1, 1, 1]): 
             num_imgs = len(imgs)
             num_clients = int(num_imgs / self.n_imgs)
 

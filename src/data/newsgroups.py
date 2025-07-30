@@ -51,7 +51,7 @@ class Dataset(BaseDataset):
 
 
 def get_federation(num_shards: int, alpha: float, attacks: list[Attack] = [], attacks_proba: float = 0.) -> list[Dict[str, Dataset]]:
-    sampler = FederationSampler(TRAIN_DATA_PATH, TEST_DATA_PATH, "png", 10)
+    sampler = FederationSampler(TRAIN_DATA_PATH, TEST_DATA_PATH, "txt", 20)
     federation = sampler.sample_federation(Dataset, num_shards, alpha, attacks, attacks_proba)
     return federation
 

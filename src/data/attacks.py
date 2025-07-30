@@ -135,6 +135,7 @@ class RandomCancellation(Attack):
             proba: float = 0.5
     ): 
         super(RandomCancellation, self).__init__()
+        self.id = "random_cancellation"
         self.p = proba
         return 
     
@@ -160,6 +161,7 @@ class ShiftEmbedding(Attack):
             proba: float = 0.5
     ): 
         super(ShiftEmbedding, self).__init__()
+        self.id = "shift_embedding"
         self.p = proba
         return 
     
