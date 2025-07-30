@@ -36,7 +36,8 @@ class DetectionDataset(Dataset):
             discriminant_params: dict[str, Any],
             pca_n_components: int,
             n_imgs: int,
-            device: str
+            device: str,
+            is_text: bool = False
     ): 
         self.dataset = dataset
         self.discriminant = discriminant
@@ -48,6 +49,7 @@ class DetectionDataset(Dataset):
         self.num_features = None
         self.n_imgs = n_imgs
         self.pca_n_components = pca_n_components
+        self.is_text = is_text
         return 
     
 
@@ -80,12 +82,17 @@ class DetectionDataset(Dataset):
                 x = x.numpy()
                 imgs0.append(x)
 
-            elif randint(0, 1): 
-                attack = GaussianNoise(uniform(.5, 2.)) 
-                imgs1.append(attack(x[None, :, :])[0].numpy())
-            else:
-                attack = GaussianBlur(2 * randint(1, 9) + 1)
-                imgs2.append(attack(x[None, :, :])[0].numpy())
+            else: 
+                if self.is_text: 
+                    attack = ShiftEmbedding(uniform(.4, .8))
+                    imgs1.append(attack(x[None, :, :]).numpy())
+                
+                elif randint(0, 1): 
+                    attack = GaussianNoise(uniform(.5, 2.)) 
+                    imgs1.append(attack(x[None, :, :])[0].numpy())
+                else:
+                    attack = GaussianBlur(2 * randint(1, 9) + 1)
+                    imgs2.append(attack(x[None, :, :])[0].numpy())
 
         cache_tmp = []
         labels_tmp = []
@@ -225,12 +232,13 @@ def train_detector(
         batch_size: int, 
         pca_n_components: int,
         n_imgs: int = 100,
-        device: str = "cpu"
+        device: str = "cpu",
+        is_text: bool = False
 ) -> Module: 
     # Dataset
     acc_list = []
-    train_detection_dataset = DetectionDataset(train_dataset, discriminant, discriminant_params, pca_n_components, n_imgs, device) 
-    test_detection_dataset = DetectionDataset(test_dataset, discriminant, discriminant_params, pca_n_components, n_imgs, device) 
+    train_detection_dataset = DetectionDataset(train_dataset, discriminant, discriminant_params, pca_n_components, n_imgs, device, is_text) 
+    test_detection_dataset = DetectionDataset(test_dataset, discriminant, discriminant_params, pca_n_components, n_imgs, device, is_text) 
 
     train_dataloader = DataLoader(train_detection_dataset, batch_size = batch_size, shuffle = True, drop_last = True)
     test_dataloader = DataLoader(test_detection_dataset, batch_size = batch_size, shuffle = False, drop_last = False)
