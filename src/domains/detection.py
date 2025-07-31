@@ -97,7 +97,7 @@ class DetectionDataset(Dataset):
                         imgs2.append(attack(x[None, :, :])[0].numpy())
                     else: 
                         attack = RandomCancellation(uniform(.25, .75))
-                        imgs3.append(attack(x[None, :, :][0]).numpy())
+                        imgs3.append(attack(x[None, :, :])[0].numpy())
 
         cache_tmp = []
         labels_tmp = []
