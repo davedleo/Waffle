@@ -15,7 +15,8 @@ def get_dataset_domain(
         J_wst: int = 2, 
         L_wst: int = 8,
         pca_n_components: int = 1, 
-        sample_size: float = 1.
+        sample_size: float = 1.,
+        device: str = "cpu"
 ) -> dict[str, Tensor]: 
     # Loading
     N = len(dataset)
@@ -40,8 +41,8 @@ def get_dataset_domain(
     eigimg = eigimg.view(1, height, width)
 
     # WST 
-    wst = Scattering2D(J = J_wst, shape = (height, width), L = L_wst)
-    eigwst = wst(eigimg)[:, 1 : J_wst * L_wst].reshape(-1)
+    wst = Scattering2D(J = J_wst, shape = (height, width), L = L_wst).to(device)
+    eigwst = wst(eigimg.to(device))[:, 1 : J_wst * L_wst].reshape(-1).cpu()
 
     return eigwst
 

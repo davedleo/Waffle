@@ -135,8 +135,8 @@ class DetectionDataset(Dataset):
             J_wst = self.discriminant_params["J_wst"]
             L_wst = self.discriminant_params["L_wst"]
 
-            wst = Scattering2D(J = J_wst, shape = (height, width), L = L_wst)
-            cache = wst(cache_tmp)[:, 1:L_wst * J_wst].reshape(cache_tmp.size(0), -1)
+            wst = Scattering2D(J = J_wst, shape = (height, width), L = L_wst).to(self.device)
+            cache = wst(cache_tmp.to(self.device))[:, 1:L_wst * J_wst].reshape(cache_tmp.size(0), -1).cpu()
 
         if self.num_features is None:
             self.num_features = cache.size(1)
