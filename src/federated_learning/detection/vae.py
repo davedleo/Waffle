@@ -91,14 +91,15 @@ class Server(BaseServer):
             self,
             clients: list[BaseClient],
             participation_rate: Union[int, float],
-            model: Module
+            model: Module,
+            vae_path: str,
     ): 
         super(Server, self).__init__(
             clients = clients,
             participation_rate = participation_rate
         )
         self.model = model 
-        self.detector = load(join("src", "federated_learning", "detection", "vae.pth"))
+        self.detector = load(vae_path)
         self.detector.eval()
         self.malicious_votes = {i: [] for i in range(len(clients))}
         return 
