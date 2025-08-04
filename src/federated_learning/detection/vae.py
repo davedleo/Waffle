@@ -1,9 +1,9 @@
 from os.path import join
 
-from numpy import ndarray
+from numpy import ndarray, arange
 from numpy.random import choice
 
-from torch import load, cat, stack, no_grad
+from torch import load, cat, stack, no_grad, randperm
 from torch.nn import Module
 from torch.optim.optimizer import Optimizer
 
@@ -13,6 +13,8 @@ from src.federated_learning.base import BaseClient, BaseServer
 from typing import Union, Any
 
 from tqdm import tqdm
+
+from copy import deepcopy
 
 from logging import getLogger, basicConfig, INFO, StreamHandler
 
@@ -74,6 +76,7 @@ class Client(BaseClient):
 
         training_dict = {
             "model": [p.data.cpu() for p in model.parameters()],
+            "state_dict": deepcopy(model.state_dict()),
             "loss": cumulative_loss / self._num_samples,
             "num_samples": self._num_samples
         }
@@ -92,6 +95,7 @@ class Server(BaseServer):
             clients: list[BaseClient],
             participation_rate: Union[int, float],
             model: Module,
+            num_features: int,
             vae_path: str,
     ): 
         super(Server, self).__init__(
@@ -99,8 +103,9 @@ class Server(BaseServer):
             participation_rate = participation_rate
         )
         self.model = model 
-        self.detector = load(vae_path)
+        self.detector = load(vae_path, weights_only = False)
         self.detector.eval()
+        self.num_features = num_features
         self.malicious_votes = {i: [] for i in range(len(clients))}
         return 
     
@@ -112,16 +117,17 @@ class Server(BaseServer):
             indexes: ndarray
     ) -> list[Any]: 
         # Setup
-        w0 = [p.data.view(-1) for p in self.model.parameters()]
-        w0 = w0.pop(-1).view(1, -1)
-        W = stack([update["model"][-1].view(-1) for update in updates])
-        X = W - w0
+        w0 = self.model.state_dict()["_mlp.5.weight"].view(-1)
+        dw = [update["state_dict"]["_mlp.5.weight"].view(-1) - w0 for update in updates]
+        n = w0.size(0)
+        X = stack([delta[randperm(n)[:self.num_features]] for delta in dw])
 
         # Detection 
-        X_hat = self.detector(X)
+        X_hat = self.detector(X)[0]
         loss = (X - X_hat).pow(2).mean(1).numpy()
-        thresh = loss.mean().numpy()
+        thresh = loss.mean()
         malicious_indexes = indexes[loss > thresh]
+        updates_index = arange(len(updates))[loss > thresh]
 
         # Update malicious votes 
         for i in indexes: 
@@ -130,7 +136,7 @@ class Server(BaseServer):
             else: 
                 self.malicious_votes[i].append(0)
 
-        return [updates[i] for i in malicious_indexes]
+        return [updates[i] for i in updates_index]
     
 
     def aggregation(
