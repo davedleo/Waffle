@@ -73,10 +73,11 @@ class DetectionDataset(Dataset):
         imgs0, imgs1, imgs2, imgs3 = [], [], [], []
         for i in indexes: 
             x, _ = self.dataset[i]
-            if x.size(0) == 3:
-                x = 0.2989 * x[0] + 0.5870 * x[1] + 0.1140 * x[2] 
-            elif x.size(0) == 1:
-                x = x[0]
+            if not self.is_text: 
+                if x.size(0) == 3:
+                    x = 0.2989 * x[0] + 0.5870 * x[1] + 0.1140 * x[2] 
+                elif x.size(0) == 1:
+                    x = x[0]
 
             if randint(0, 1): 
                 x = x.numpy()
