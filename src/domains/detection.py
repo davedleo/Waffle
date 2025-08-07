@@ -10,7 +10,7 @@ from kymatio.torch import Scattering2D
 from torch import Tensor, FloatTensor, no_grad, from_numpy
 from torch import stack as tstack
 from torch.fft import fft2, fftshift
-from torch.optim import Adam
+from torch.optim import Adam, SGD
 from torch.optim.optimizer import Optimizer
 from torch.nn import Module, Sequential, Linear, Tanh, CrossEntropyLoss
 from torch.utils.data import Dataset, DataLoader
@@ -180,6 +180,30 @@ class Detector(Module):
         out = self.hl(out)
         out = self.clf(out)
         return out
+    
+
+
+
+
+class LinearDetector(Module):
+
+
+    def __init__(
+            self,
+            in_features: int,
+    ):
+        super(LinearDetector, self).__init__()
+        self.clf = Linear(in_features, 2)
+        return 
+    
+    
+    def forward(
+            self, 
+            X: Tensor
+    ) -> Tensor: 
+        out = (X - X.mean(1, keepdim = True)) / (X.std(1, keepdim = True) + 1e-8)
+        out = self.clf(out)
+        return out
 
 
 
@@ -254,8 +278,12 @@ def train_detector(
     test_detection_dataset.load()
 
     # Model 
-    model = Detector(train_detection_dataset.num_features).to(device)
-    optimizer = Adam(model.parameters())
+    if is_text: 
+        model = LinearDetector(train_detection_dataset.num_features).to(device)
+        optimizer = SGD(model.parameters(), lr = 0.001)
+    else: 
+        model = Detector(train_detection_dataset.num_features).to(device)
+        optimizer = Adam(model.parameters())
     criterion = CrossEntropyLoss()
 
     # Epochs
