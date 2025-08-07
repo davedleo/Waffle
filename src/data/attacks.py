@@ -1,4 +1,4 @@
-from torch import Tensor, rand, rand_like, zeros_like, normal
+from torch import Tensor, rand, rand_like, zeros_like, normal, no_grad
 from torchvision.transforms.functional import gaussian_blur
 
 
@@ -165,13 +165,14 @@ class ShiftEmbedding(Attack):
         self.p = proba
         return 
     
-
+    
+    @no_grad()
     def forward(
             self, 
             X: Tensor
     ) -> Tensor: 
-        shift = rand_like(X) 
-        shift = shift / shift.norm(dim = -1, keepdim = True)
+        shift = rand_like(X)
+        shift = X.norm() * shift / shift.norm(keepdim = True)
         mask = rand(X.size(1), device = X.device).type(X.dtype) <= self.p 
         shift[:, mask] = 0.
         return X + shift
