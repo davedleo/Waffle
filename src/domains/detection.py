@@ -86,7 +86,7 @@ class DetectionDataset(Dataset):
             else: 
                 if self.is_text: 
                     attack = ShiftEmbedding(uniform(.4, .8))
-                    imgs1.append(attack(x[None, :, :]).numpy())
+                    imgs1.append(attack(x[None, :, :])[0].numpy())
                 
                 else: 
                     atk = randint(0, 2)
