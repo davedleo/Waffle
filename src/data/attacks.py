@@ -172,7 +172,7 @@ class ShiftEmbedding(Attack):
             X: Tensor
     ) -> Tensor: 
         shift = rand_like(X)
-        shift = X.norm() * shift / shift.norm(keepdim = True)
+        shift = X[X != 0.].norm(keepdim = True) * shift / shift.norm(keepdim = True)
         mask = rand(X.size(1), device = X.device).type(X.dtype) <= self.p 
         shift[:, mask] = 0.
         return X + shift
